@@ -96,7 +96,21 @@
 \RequirePackage[labelfont=normalfont, position=bottom]{subcaption}
 \RequirePackage{enumitem}
 \RequirePackage{mathtools}
-\RequirePackage{mathrsfs}
+\RequirePackage{silence}
+% \RequirePackage[T1]{fontenc}
+\WarningFilter[sillyfonterror]{latex}{Font shape declaration has}
+\ActivateWarningFilters[sillyfonterror]
+\ifLuaTeX
+  % Fix Font warnings for mathdesign
+  \DeclareFontFamily{TU}{mdbch}{}
+  \DeclareFontShape{TU}{mdbch}{m}{n}{
+    <-> \UnicodeFontFile{lmroman10-regular}{\UnicodeFontTeXLigatures}
+  }{}
+\fi
+\RequirePackage[charter, cal=cmcal]{mathdesign}
+\RequirePackage{XCharter}
+\DeactivateWarningFilters[sillyfonterror]
+% \RequirePackage{mathrsfs} % We use Charter instead
 \RequirePackage{tcolorbox}
 \tcbuselibrary{skins}
 \ExplSyntaxOn
@@ -112,6 +126,7 @@
 \providecaptionname*{ngerman, german}{\solutionname}{Lösung}
 \renewcaptionname*{ngerman, german}{\solutionname}{Lösung}
 
+
 % --Helper Commands--
 
 
@@ -121,9 +136,10 @@
 \bool_if:NT \g_ptxcd_ex_load_common_bool {
   % \pagecolor{black}\color{white}
   \RequirePackage[export]{adjustbox}
-  \RequirePackage{amssymb}
+  % \RequirePackage{amssymb} % We use charter instead
   \RequirePackage[ngerman]{babel}
   \RequirePackage{blindtext}
+  \RequirePackage{bm}
   \RequirePackage{colortbl}
   % \RequirePackage{cryptocode}
   % \RequirePackage[utf8]{inputenc} % Has to be loaded before csquotes
@@ -345,8 +361,188 @@
     }
     {}
   }
+}{}
+
+% Just a basic recursion test
+\newcommand{\rubosfib}[1]{
+  \int_compare:nTF{#1 < 2}
+  {
+    #1
+  }{
+    \int_eval:n {\rubosfib{\int_eval:n {#1 - 1}} + \rubosfib{\int_eval:n {#1 - 2}}}
+  }
 }
 
+\tl_new:N \g_rubos_nesttest_tl
+\tl_gset:Nn \g_rubos_nesttest_tl {3={a)=3,b)=2,},}
+
+\newcommand{\mytestta}[1]{
+  % \regex_match:nnTF {[\w\W]+=[\w\W]+} {a-1=b} {
+  %   true
+  % } {
+  %   false
+  % }
+  \tl_if_in:nnTF  {3={a)=3,b)=2,},} {=} {
+  true
+} {
+  false
+}
+}
+
+% #1: Token List which is a nested Property List (like: {3={a)=3,b)=2,},4={a)=5,b)=3,c)=8}})
+% #2: Comma List (List of the keys to get the desired value)
+% returns: Tokenlist
+\cs_new:Npn \rubos_prop_nested_get:nn #1#2 {
+  \tl_gclear_new:N \g_rubos_nestedcurr_tl
+  \tl_set:Nn \g_rubos_nestedcurr_tl {#1}
+  \prop_clear_new:N \l_rubos_nestedcurr_prop
+  \clist_map_inline:nn {#2}{
+    % Check if Current Tokenlist is a Property List
+    \__rubos_is_prop_list:nTF {\tl_use:N \g_rubos_nestedcurr_tl} {
+      % Current List is a Property List
+      % Parse Property List
+      \exp_args:NNe \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
+        \g_rubos_nestedcurr_tl
+      }
+      % Make sure key is present
+      \prop_if_in:NnTF \l_rubos_nestedcurr_prop {##1} {
+        % Key is present
+        \prop_get:NnN \l_rubos_nestedcurr_prop {##1} \g_rubos_nestedcurr_tl
+      } {
+        % Key is not present
+        \ClassError{rubos_tuda_template}{Subproperty~##1~does~not~exist~the~nested~property~list!}{Subproperty~##1~does~not~exist~the~nested~property~list!}
+      }
+    }{
+      % Current List is no Property List
+      \ClassError{rubos_tuda_template}{Subproperty~##1~could~not~be~found~because~toplist~is~no~property~list!}{toplist~is~no~property~list}
+    }
+  }
+  % Put result in Output stream
+  \tl_use:N \g_rubos_nestedcurr_tl
+}
+
+\cs_set_eq:NN\nestedget \rubos_prop_nested_get:nn
+
+% #1: Token List which is a nested Property List (will completely overwrite if token List is faulty!!)
+% #2: Comma List (List of the keys to get the desired value)
+% #3: The Value to set (token List)
+% returns: Tokenlist
+\cs_new:Npn \rubos_prop_nested_set:nnn #1#2#3 {
+  \tl_gclear_new:N \g_rubos_nestedcurr_tl
+  \tl_set:Nn \g_rubos_nestedcurr_tl {#1}
+  \clist_clear_new:N \l_rubos_nestedkeys_remaining_clist
+  \clist_set:Nn \l_rubos_nestedkeys_remaining_clist {#2}
+  \clist_clear_new:N \l_rubos_nestedkeys_done_clist
+  \tl_clear_new:N \l_rubos_nestedkeys_current_key_tl
+  \tl_clear_new:N \l_rubos_nestedstack_tl
+  \prop_clear_new:N \l_rubos_nestedcurr_prop
+  \bool_set_true:N \l_rubos_nestediterate_bool
+  % \clist_map_inline:nn {#2}{
+  \bool_while_do:Nn \l_rubos_nestediterate_bool {
+
+    \clist_pop:NNTF \l_rubos_nestedkeys_remaining_clist \l_rubos_nestedkeys_current_key_tl {
+      % Check if Current Tokenlist is a Property List
+      \__rubos_is_prop_list:nTF {\g_rubos_nestedcurr_tl} {
+        % Current List is a Property List
+        % Parse Property List
+        \exp_args:NNe \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
+          \g_rubos_nestedcurr_tl
+        }
+        \tl_put_left:Nn \l_rubos_nestedstack_tl \g_rubos_nestedcurr_tl
+        % Test if key is present
+        \prop_if_in:NnTF \l_rubos_nestedcurr_prop {\tl_use:N \l_rubos_nestedkeys_current_key_tl} {
+          % Key is present
+          \prop_get:NnN \l_rubos_nestedcurr_prop {\tl_use:N \l_rubos_nestedkeys_current_key_tl} \g_rubos_nestedcurr_tl
+          \clist_push:Nn \l_rubos_nestedkeys_done_clist {\tl_use:N \l_rubos_nestedkeys_current_key_tl}
+        } {
+          % Key is not present
+          \bool_set_false:N \l_rubos_nestediterate_bool
+        }
+      }{
+        % Current List is no Property List
+        \bool_set_false:N \l_rubos_nestediterate_bool
+        % \ClassError{rubos_tuda_template}{Subproperty~\tl_use:N \l_rubos_nestedkeys_current_key_tl~could~not~be~found~because~toplist~is~no~property~list!}{toplist~is~no~property~list}
+      }
+    } {\bool_set_false:N \l_rubos_nestediterate_bool}
+  }
+  % }
+  remaining: \l_rubos_nestedkeys_remaining_clist\par
+  done: \l_rubos_nestedkeys_done_clist
+  % Put result in Output stream
+  % \tl_use:N \g_rubos_nestedcurr_tl
+}
+
+\cs_set_eq:NN\nestedset \rubos_prop_nested_set:nn
+
+\prg_new_conditional:Npnn \__rubos_is_prop_list:n #1 { p, T, F, TF } {
+
+  \bool_if:nT {\tl_if_empty_p:n {#1} || \tl_if_blank_p:n {#1}} {\prg_return_true:}
+  \bool_set_true:N \l_rubos_is_prop_bool
+  \exp_args:Ne \clist_map_inline:nn {#1} {
+    \bool_if:NT \l_rubos_is_prop_bool {
+      % ##1
+      \bool_if:nF {\tl_if_empty_p:n {#1} || \tl_if_blank_p:n {#1}} {
+        % Must contain =
+        \tl_if_in:nnF {##1} {=} {\bool_set_false:N \l_rubos_is_prop_bool}
+        % Must have at least length 3
+        \int_compare:nF {\tl_count:n {##1} > 2} {\bool_set_false:N \l_rubos_is_prop_bool}
+        \regex_match:nnF {.+=.+} {##1} {\bool_set_false:N \l_rubos_is_prop_bool}
+        % Might refine Logic later
+        % \int_zero_new:N \l_tmp_regex_match_count_int
+        % \regex_count:nnN {=} {##1} \l_tmp_regex_match_count_int
+        % \int_compare:nF {\l_tmp_regex_match_count_int = 1} {\int_use:N \l_tmp_regex_match_count_int \bool_set_false:N \l_rubos_is_prop_bool}
+      }
+    }
+  }
+  \bool_if:NTF \l_rubos_is_prop_bool {
+    \prg_return_true:
+  } {
+    \prg_return_false:
+  }
+}
+
+% #1: Token List which is a nested Property List (like: {3={a)=3,b)=2,},4={a)=5,b)=3,c)=8}})
+% #2: Comma List (List of the keys to get the desired value)
+\prg_new_conditional:Npnn \__rubos_nested_contains:nn #1#2 { p, T, F, TF } {
+  \tl_gclear_new:N \g_rubos_nestedcurr_tl
+  \tl_set:Nn \g_rubos_nestedcurr_tl {#1}
+  \prop_clear_new:N \l_rubos_nestedcurr_prop
+  % Since you can't use the return statement inside a map function...
+  \bool_set_true:N \l_rubos_nestedcontains_bool
+  \clist_map_inline:nn {#2}{
+    \bool_if:NT \l_rubos_nestedcontains_bool {
+      % Check if Current Tokenlist is a Property List
+      \tl_if_in:NnTF \g_rubos_nestedcurr_tl {=} {
+        % Current List is a Property List
+        % Parse Property List
+        \exp_args:NNe \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
+          \g_rubos_nestedcurr_tl
+        }
+        % Make sure key is present
+        \prop_if_in:NnTF \l_rubos_nestedcurr_prop {##1} {
+          % Key is present
+          \prop_get:NnN \l_rubos_nestedcurr_prop {##1} \g_rubos_nestedcurr_tl
+        } {
+          % Key is not present
+          \bool_set_false:N \l_rubos_nestedcontains_bool
+        }
+      }{
+        % Current List is no Property List
+        \bool_set_false:N \l_rubos_nestedcontains_bool
+      }
+    }
+  }
+  % Wanted Key is contained
+  \bool_if:NTF \l_rubos_nestedcontains_bool {
+    \prg_return_true:
+  } {
+    \prg_return_false:
+  }
+}
+
+\cs_set_eq:NN\IfNestedContainsT \__rubos_nested_contains:nnT
+\cs_set_eq:NN\IfNestedContainsF \__rubos_nested_contains:nnF
+\cs_set_eq:NN\IfNestedContainsTF \__rubos_nested_contains:nnTF
 
 \ExplSyntaxOff
 
@@ -1062,35 +1258,35 @@
   }
 }
 \clist_map_inline:nn {odd, even, oneside} {
-  \keys_define:nn {TUDa/exercise/headline} {
-    #1 .choice:,
-    #1 / aud .code:n = \tl_gset:cn {g_TUDa_ex_headline_#1_tl} {
-      \textbf{\g_TUDa_shorttitle_tl}\tl_if_empty:NF \g_ptxcd_ex_semester_tl {\space{}im\space\textbf{\g_ptxcd_ex_semester_tl}}\tl_if_empty:NF \g_ptxcd_ex_dozent_tl {\space{}bei\space\textbf{\g_ptxcd_ex_dozent_tl}} \tl_if_empty:NF g_TUDa_ex_sheetnum_tl {\hfill Übungsblatt\space{}\padzeroes[2]{\g_TUDa_ex_sheetnum_tl}}\par
-      \StudentName\StudentID},
-    #1 / submittors-detailed .code:n = \tl_gset:cn {g_TUDa_ex_headline_#1_tl} { % Diese Option ist eher für Einzelabgaben gedacht, da sie sonst sehr viel Platz weg nimmt
-      \textbf{\g_TUDa_shorttitle_tl}\tl_if_empty:NF \g_ptxcd_ex_semester_tl {\space{}im\space\textbf{\g_ptxcd_ex_semester_tl}}\tl_if_empty:NF \g_ptxcd_ex_dozent_tl {\space{}bei\space\textbf{\g_ptxcd_ex_dozent_tl}}\hfill Übungsblatt\space{}\padzeroes[2]{\g_TUDa_ex_sheetnum_tl}\par
-      \gdef\ptxcd_nextsep_submittors{}
-      \seq_map_inline:Nn \g_ptxcd_submittors_seq {
-        \ptxcd_nextsep_submittors Name\StudentNamesep\hrulefill ####1\hrulefill\qquad\StudentIDname\StudentIDsep \exp_args:Nx\str_map_inline:Nn {\getMatrikelnummer{####1}} {\numberFormBox{########1}}\gdef\ptxcd_nextsep_submittors{\par}
-      }
-    },
-    #1 / submittors-semi-detailed .code:n = \tl_gset:cn {g_TUDa_ex_headline_#1_tl} { % Diese Option ist eher für Einzelabgaben gedacht, da sie sonst sehr viel Platz weg nimmt
-      \textbf{\g_TUDa_shorttitle_tl}\tl_if_empty:NF \g_ptxcd_ex_semester_tl {\space{}im\space\textbf{\g_ptxcd_ex_semester_tl}}\tl_if_empty:NF \g_ptxcd_ex_dozent_tl {\space{}bei\space\textbf{\g_ptxcd_ex_dozent_tl}}\hfill Übungsblatt\space{}\padzeroes[2]{\g_TUDa_ex_sheetnum_tl}\par
-      \seq_if_empty:NF\g_ptxcd_submittors_seq {\textbf{Abgabe\space{}von:}\space
-        \seq_use:Nnnn \g_ptxcd_submittors_seq {~\authorandname{}~} {,~} {~\authorandname{}~}}
-    },
-    #1 / submittors .code:n = {\tl_gset:cn {g_TUDa_ex_headline_#1_tl} {
-          \textbf{\textsf{\g_TUDa_shorttitle_tl\space{}Abgabe}}\seq_if_empty:NF\g_ptxcd_submittors_seq {\textbf{\textsf{\space{}von:}}\space
-            \seq_use:Nnnn \g_ptxcd_submittors_seq {~\authorandname{}~} {,~} {~\authorandname{}~}}
-        }},
-    #1 / submittors-centered .code:n = {\tl_gset:cn {g_TUDa_ex_headline_#1_tl} {
-          \centering\textbf{\textsf{\g_TUDa_shorttitle_tl\space{}Abgabe}}\seq_if_empty:NF\g_ptxcd_submittors_seq {\textbf{\textsf{\space{}von:}}\space
-            \seq_use:Nnnn \g_ptxcd_submittors_seq {~\authorandname{}~} {,~} {~\authorandname{}~}}
-        }},
-    #1 / summary-centered .code:n = \tl_gset:cn {g_TUDa_ex_headline_#1_tl} {%
-      \centering\textbf{\sffamily\g_TUDa_shorttitle_tl\space{}Zusammenfassung}\space{}von\space{}\seq_use:Nnnn \g_TUDa_author_seq {~\authorandname{}~} {,~} {~\authorandname{}~}},
-    #1 / unknown .code:n = \tl_gset:cn {g_TUDa_ex_headline_#1_tl} {##1}
+\keys_define:nn {TUDa/exercise/headline} {
+#1 .choice:,
+#1 / aud .code:n = \tl_gset:cn {g_TUDa_ex_headline_#1_tl} {
+\textbf{\g_TUDa_shorttitle_tl}\tl_if_empty:NF \g_ptxcd_ex_semester_tl {\space{}im\space\textbf{\g_ptxcd_ex_semester_tl}}\tl_if_empty:NF \g_ptxcd_ex_dozent_tl {\space{}bei\space\textbf{\g_ptxcd_ex_dozent_tl}} \tl_if_empty:NF g_TUDa_ex_sheetnum_tl {\hfill Übungsblatt\space{}\padzeroes[2]{\g_TUDa_ex_sheetnum_tl}}\par
+\StudentName\StudentID},
+#1 / submittors-detailed .code:n = \tl_gset:cn {g_TUDa_ex_headline_#1_tl} { % Diese Option ist eher für Einzelabgaben gedacht, da sie sonst sehr viel Platz weg nimmt
+  \textbf{\g_TUDa_shorttitle_tl}\tl_if_empty:NF \g_ptxcd_ex_semester_tl {\space{}im\space\textbf{\g_ptxcd_ex_semester_tl}}\tl_if_empty:NF \g_ptxcd_ex_dozent_tl {\space{}bei\space\textbf{\g_ptxcd_ex_dozent_tl}}\hfill Übungsblatt\space{}\padzeroes[2]{\g_TUDa_ex_sheetnum_tl}\par
+  \gdef\ptxcd_nextsep_submittors{}
+  \seq_map_inline:Nn \g_ptxcd_submittors_seq {
+    \ptxcd_nextsep_submittors Name\StudentNamesep\hrulefill ####1\hrulefill\qquad\StudentIDname\StudentIDsep \exp_args:Nx\str_map_inline:Nn {\getMatrikelnummer{####1}} {\numberFormBox{########1}}\gdef\ptxcd_nextsep_submittors{\par}
   }
+},
+#1 / submittors-semi-detailed .code:n = \tl_gset:cn {g_TUDa_ex_headline_#1_tl} { % Diese Option ist eher für Einzelabgaben gedacht, da sie sonst sehr viel Platz weg nimmt
+  \textbf{\g_TUDa_shorttitle_tl}\tl_if_empty:NF \g_ptxcd_ex_semester_tl {\space{}im\space\textbf{\g_ptxcd_ex_semester_tl}}\tl_if_empty:NF \g_ptxcd_ex_dozent_tl {\space{}bei\space\textbf{\g_ptxcd_ex_dozent_tl}}\hfill Übungsblatt\space{}\padzeroes[2]{\g_TUDa_ex_sheetnum_tl}\par
+  \seq_if_empty:NF\g_ptxcd_submittors_seq {\textbf{Abgabe\space{}von:}\space
+    \seq_use:Nnnn \g_ptxcd_submittors_seq {~\authorandname{}~} {,~} {~\authorandname{}~}}
+},
+#1 / submittors .code:n = {\tl_gset:cn {g_TUDa_ex_headline_#1_tl} {
+      \textbf{\textsf{\g_TUDa_shorttitle_tl\space{}Abgabe}}\seq_if_empty:NF\g_ptxcd_submittors_seq {\textbf{\textsf{\space{}von:}}\space
+        \seq_use:Nnnn \g_ptxcd_submittors_seq {~\authorandname{}~} {,~} {~\authorandname{}~}}
+    }},
+#1 / submittors-centered .code:n = {\tl_gset:cn {g_TUDa_ex_headline_#1_tl} {
+      \centering\textbf{\textsf{\g_TUDa_shorttitle_tl\space{}Abgabe}}\seq_if_empty:NF\g_ptxcd_submittors_seq {\textbf{\textsf{\space{}von:}}\space
+        \seq_use:Nnnn \g_ptxcd_submittors_seq {~\authorandname{}~} {,~} {~\authorandname{}~}}
+    }},
+#1 / summary-centered .code:n = \tl_gset:cn {g_TUDa_ex_headline_#1_tl} {%
+  \centering\textbf{\sffamily\g_TUDa_shorttitle_tl\space{}Zusammenfassung}\space{}von\space{}\seq_use:Nnnn \g_TUDa_author_seq {~\authorandname{}~} {,~} {~\authorandname{}~}},
+#1 / unknown .code:n = \tl_gset:cn {g_TUDa_ex_headline_#1_tl} {##1}
+}
 }
 
 \ExplSyntaxOff
