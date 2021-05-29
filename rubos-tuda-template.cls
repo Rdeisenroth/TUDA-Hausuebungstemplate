@@ -427,35 +427,32 @@
 % #2: Comma List (List of the keys to get the desired value)
 % #3: The Value to set (token List)
 % returns: Tokenlist
-\cs_new:Npn \rubos_prop_nested_set:nnn #1#2#3 {
-  \tl_gclear_new:N \g_rubos_nestedcurr_tl
-  \tl_set:Nn \g_rubos_nestedcurr_tl {#1}
+\cs_new:Npn \rubos_prop_nested_set:Nnn #1#2#3 {
+  \tl_clear_new:N \l_rubos_nestedcurr_tl
+  \tl_set_eq:NN \l_rubos_nestedcurr_tl {#1}
   \clist_clear_new:N \l_rubos_nestedkeys_remaining_clist
   \clist_set:Nn \l_rubos_nestedkeys_remaining_clist {#2}
   \clist_clear_new:N \l_rubos_nestedkeys_done_clist
-  \tl_clear_new:N \l_rubos_nestedkeys_current_key_tl
+  \str_clear_new:N \l_rubos_nestedkeys_current_key_tl
   \tl_clear_new:N \l_rubos_nestedstack_tl
   \prop_clear_new:N \l_rubos_nestedcurr_prop
   \bool_set_true:N \l_rubos_nestediterate_bool
-  % \clist_map_inline:nn {#2}{
+  % Fill Stack and find out insertion point
   \bool_while_do:Nn \l_rubos_nestediterate_bool {
-
+    % Keys remain
     \clist_pop:NNTF \l_rubos_nestedkeys_remaining_clist \l_rubos_nestedkeys_current_key_tl {
+      \exp_args:NNe \clist_push:Nn \l_rubos_nestedkeys_done_clist {\l_rubos_nestedkeys_current_key_tl}
       % Check if Current Tokenlist is a Property List
-      \__rubos_is_prop_list:nTF {\g_rubos_nestedcurr_tl} {
+      \__rubos_is_prop_list:nTF {\l_rubos_nestedcurr_tl} {
         % Current List is a Property List
         % Parse Property List
         \exp_args:NNe \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
-          \g_rubos_nestedcurr_tl
+          \l_rubos_nestedcurr_tl
         }
-        \tl_put_left:Nn \l_rubos_nestedstack_tl \g_rubos_nestedcurr_tl
+        \exp_args:NNe \tl_put_left:Nn \l_rubos_nestedstack_tl {{\l_rubos_nestedcurr_tl}}
         % Test if key is present
-        \prop_if_in:NnTF \l_rubos_nestedcurr_prop {\tl_use:N \l_rubos_nestedkeys_current_key_tl} {
-          % Key is present
-          \prop_get:NnN \l_rubos_nestedcurr_prop {\tl_use:N \l_rubos_nestedkeys_current_key_tl} \g_rubos_nestedcurr_tl
-          \clist_push:Nn \l_rubos_nestedkeys_done_clist {\tl_use:N \l_rubos_nestedkeys_current_key_tl}
-        } {
-          % Key is not present
+        \exp_args:NNo \prop_get:NnNF \l_rubos_nestedcurr_prop {\l_rubos_nestedkeys_current_key_tl} \l_rubos_nestedcurr_tl {
+          % Key is not Present
           \bool_set_false:N \l_rubos_nestediterate_bool
         }
       }{
@@ -463,13 +460,41 @@
         \bool_set_false:N \l_rubos_nestediterate_bool
         % \ClassError{rubos_tuda_template}{Subproperty~\tl_use:N \l_rubos_nestedkeys_current_key_tl~could~not~be~found~because~toplist~is~no~property~list!}{toplist~is~no~property~list}
       }
-    } {\bool_set_false:N \l_rubos_nestediterate_bool}
+    } {
+      % no keys remain
+      \bool_set_false:N \l_rubos_nestediterate_bool
+    }
   }
-  % }
-  remaining: \l_rubos_nestedkeys_remaining_clist\par
-  done: \l_rubos_nestedkeys_done_clist
+  % \par
+  % remaining: \l_rubos_nestedkeys_remaining_clist\par
+  % done: \l_rubos_nestedkeys_done_clist\par
+  % stack: \tl_map_inline:Nn \l_rubos_nestedstack_tl {\{##1\},}\par
+
+  % Create nested Property List to insert based on insertion point
+  \tl_clear_new:N \l_rubos_new_nestedprop_tl
+  \tl_set:Nn \l_rubos_new_nestedprop_tl {#3}
+
+  % Insert at insertion point using the stack
+  \clist_map_inline:Nn \l_rubos_nestedkeys_done_clist {
+    % ##1,
+    % Parse Next Prop List from Stack
+    \prop_clear:N \l_rubos_nestedcurr_prop
+    \exp_args:NNe \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
+      \tl_head:N \l_rubos_nestedstack_tl
+    }
+    \tl_set:Nx \l_rubos_nestedstack_tl {\tl_tail:N \l_rubos_nestedstack_tl}
+    \prop_put:Nxx \l_rubos_nestedcurr_prop {##1} {\l_rubos_new_nestedprop_tl}
+
+    \tl_clear:N \l_rubos_new_nestedprop_tl
+    \prop_map_inline:Nn \l_rubos_nestedcurr_prop {
+        \tl_put_right:Nn \l_rubos_new_nestedprop_tl {####1={####2},}
+      }
+  }
+
+  % \par stack2: \tl_map_inline:Nn \l_rubos_nestedstack_tl {\{##1\},}\par
   % Put result in Output stream
-  % \tl_use:N \g_rubos_nestedcurr_tl
+  % \par result:\tl_use:N \l_rubos_new_nestedprop_tl\par
+  \tl_set_eq:NN #1 \l_rubos_new_nestedprop_tl
 }
 
 \cs_set_eq:NN\nestedset \rubos_prop_nested_set:nn
@@ -543,6 +568,14 @@
 \cs_set_eq:NN\IfNestedContainsT \__rubos_nested_contains:nnT
 \cs_set_eq:NN\IfNestedContainsF \__rubos_nested_contains:nnF
 \cs_set_eq:NN\IfNestedContainsTF \__rubos_nested_contains:nnTF
+
+\cs_new:Npn \rubos_print_nested_tl:n #1 {
+  \{
+    \exp_args:No \tl_map_inline:nn {#1} {
+      \int_compare:nTF {\tl_count:n{##1}=1} {##1}{\rubos_print_nested_tl:n {##1}}
+    }
+  \}
+}
 
 \ExplSyntaxOff
 

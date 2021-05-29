@@ -86,13 +86,13 @@
             $\varphi, \psi$
             $\mathcal{ABCD}$
 
-            Fib: \rubosfib{20}
+            % Fib: \rubosfib{20}
 
-            Check: \IfNestedContainsTF{3={a)=3,b)=2,},4=2}{3,c)}{true}{false}
+            % Check: \IfNestedContainsTF{3={a)=3,b)=2,},4=2}{3,c)}{true}{false}
             
-            asd: \nestedget{3={a)=3,b)=2,},4=2}{3,b)}
+            % asd: \nestedget{3={a)=3,b)=2,},4=2}{3,b)}
 
-            ab:
+            --Testcode--\par
             \ExplSyntaxOn
             \tl_gclear_new:N \g_rubos_basdiuhpiowehf_tl
             \tl_set:Nn \g_rubos_basdiuhpiowehf_tl {3={a)=3,b)=2,},2=42}
@@ -110,7 +110,11 @@
             % \bool_if:NTF \r_tuda_bruh_bool {true} {false}
             % \__rubos_is_prop_list:nTF {\g_rubos_basdiuhpiowehf_tl} {true} {false}
             %
-            \rubos_prop_nested_set:nnn {3={a)=3,b)=2,},4=2}{3,c)} {8}
+            \tl_new:N \l_lel_tl
+            \tl_set:Nn \l_lel_tl {3={a)=3,b)=2,c)={1=2,2=3}}}
+            \rubos_prop_nested_set:Nnn \l_lel_tl {3,c),2} {8}
+            % \tl_use:N \l_lel_tl\par
+            tl: \rubos_print_nested_tl:n {\l_lel_tl}
             \ExplSyntaxOff
         \end{solution}
     \end{subtask}
