@@ -94,27 +94,15 @@
 
             --Testcode--\par
             \ExplSyntaxOn
-            \tl_gclear_new:N \g_rubos_basdiuhpiowehf_tl
-            \tl_set:Nn \g_rubos_basdiuhpiowehf_tl {3={a)=3,b)=2,},2=42}
-            % \prg_generate_conditional_variant:Nnn \tl_if_in:nn { nn } { p }
-            % \prg_set_conditional:Npnn \tl_if_in:nn #1#2 {p} {
-            %     \exp_args:Nxx \tl_if_in:cnTF {#1} {#2} {\prg_return_true:} {\prg_return_false:}
-            % }
-            % \cs_show:N \tl_if_in_p:nn
-            % \bool_if:nTF {\tl_if_in_p:nn {3={a)=3,b)=2,},4=2} {=} } {true} {false}
-            % \bool_gset_true:N \rubos_tool_bool
-            % \tl_if_in:NnF \g_rubos_basdiuhpiowehf_tl {=} {\bool_gset_false:N \rubos_tool_bool}
-            % \bool_if:nT {\tl_if_empty_p:N \g_rubos_basdiuhpiowehf_tl || \tl_if_blank_p:n {\g_rubos_basdiuhpiowehf_tl}} {\bool_gset_true:N \rubos_tool_bool}
-            % \bool_if:NTF \rubos_tool_bool {true}{false}
-            % \bool_if:nTF {\__rubos_nested_contains_p:nn {3={a)=3,b)=2,},4=2}{3,c)}}{true}{false}
-            % \bool_if:NTF \r_tuda_bruh_bool {true} {false}
-            % \__rubos_is_prop_list:nTF {\g_rubos_basdiuhpiowehf_tl} {true} {false}
             %
             \tl_new:N \l_lel_tl
-            \tl_set:Nn \l_lel_tl {3={a)=3,b)=2,c)={1=2,2=3}}}
-            \rubos_prop_nested_set:Nnn \l_lel_tl {3,c),2} {8}
+            % \tl_set:Nn \l_lel_tl {3={a)=3,b)=2,c)={1=2,2=3}},4={a)=3}}
+            \tl_set:Nn \l_lel_tl {3={a)=3,b)=2,c)={1=2,2=3}},4={a)=3},a=3}
+            \rubos_prop_nested_set:Nnn \l_lel_tl {5,c),2} {9}
+            \rubos_prop_nested_set:Nnn \l_lel_tl {5,d),5} {8}
             % \tl_use:N \l_lel_tl\par
             tl: \rubos_print_nested_tl:n {\l_lel_tl}
+            % \par get: \nestedget{\l_lel_tl}{3,c),2}\par
             \ExplSyntaxOff
         \end{solution}
     \end{subtask}
