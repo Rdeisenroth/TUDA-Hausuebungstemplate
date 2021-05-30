@@ -3,7 +3,8 @@
     color=1b,
     load_common,
     submission,
-    dark_mode,
+    % dark_mode,
+    % solution=true,
     boxarc,
     % manual_term, % Restore original Functionality to term
     % shell_escape = false, % Kompatibilität mit sharelatex
@@ -194,13 +195,13 @@
             \mapTasks{
                 \node[lightgraygradetablenode, font=\bfseries, right=-\pgflinewidth of n0-\the\numexpr\value{task}-1\relax.east] (n0-\the\value{task}) {\taskformat{}};
                 \node[gradetablenode, right=-\pgflinewidth of n1-\the\numexpr\value{task}-1\relax.east] (n1-\the\value{task}) {\getPoints{\thetask}};
-                \node[gradetablenode, right=-\pgflinewidth of n2-\the\numexpr\value{task}-1\relax.east] (n2-\the\value{task}) {};
+                \node[gradetablenode, right=-\pgflinewidth of n2-\the\numexpr\value{task}-1\relax.east] (n2-\the\value{task}) {\IfSolutionT{\fatsf{\getPoints{\thetask}}}};
                 \xdef\lasttask{\value{task}}
             }
             % Probably + 1 in node names is too much, will check later
             \node[lightgraygradetablenode, minimum width=1.1cm, right=-\pgflinewidth of n0-\the\numexpr\lasttask-1\relax.east] (n0-\the\numexpr\lasttask + 1\relax){$\boldsymbol{\Sigma}$};
             \node[gradetablenode, minimum width=1.1cm, right=-\pgflinewidth of n1-\the\numexpr\lasttask-1\relax.east] (n1-\the\numexpr\lasttask + 1\relax){$\getPointsTotal{}$};
-            \node[gradetablenode, minimum width=1.1cm, right=-\pgflinewidth of n2-\the\numexpr\lasttask-1\relax.east] (n2-\the\numexpr\lasttask + 1\relax){};
+            \node[gradetablenode, minimum width=1.1cm, right=-\pgflinewidth of n2-\the\numexpr\lasttask-1\relax.east] (n2-\the\numexpr\lasttask + 1\relax){\IfSolutionT{\fatsf{\getPointsTotal{}}}};
             % Extra lines
             \draw[transform canvas={xshift = -1mm}] (n0-0.north east) -- (n2-0.south east);
             \draw[transform canvas={xshift = 1mm}] (n0-\the\numexpr\lasttask+1.north west) -- (n2-\the\numexpr\lasttask+1.south west);
@@ -217,16 +218,16 @@
         \rowcolors{2}{fgcolor!10!\thepagecolor}{fgcolor!10!\thepagecolor}
         \begin{tabularx}{\textwidth}{|X|c|c|}
             \toprule
-            \fatsf{Aufgabe}                       & \fatsf{möglich}                                      & \fatsf{erreicht}            \\
+            \fatsf{Aufgabe}                                                                               & \fatsf{möglich}                                      & \fatsf{erreicht}                                                           \\
             \midrule\midrule
             \mapTasks*{%
-            \textbf{\taskformat{}:~\getTaskTitle{\the\value{task}}}                & \getPoints{\thetask}                                 & \IfSubtasksTF{\mapSubtasks{ \\%
-            \rowcolor{\thepagecolor}\thesubtask{}~\getSubTaskTitle{\the\value{task}}{\the\value{subtask}} & \getSubPoints{\the\value{task}}{\the\value{subtask}} &
+            \textbf{\taskformat{}:~\getTaskTitle{\the\value{task}}}                                       & \getPoints{\thetask}                                 & \IfSolutionT{\fatsf{\getPoints{\thetask}}}\IfSubtasksTF{\mapSubtasks{      \\%
+            \rowcolor{\thepagecolor}\thesubtask{}~\getSubTaskTitle{\the\value{task}}{\the\value{subtask}} & \getSubPoints{\the\value{task}}{\the\value{subtask}} & \IfSolutionT{\fatsf{\getSubPoints{\the\value{task}}{\the\value{subtask}}}} %
                     }
-            }{}                                                                                                                        \\
+            }{}                                                                                                                                                                                                                               \\
                 \midrule\midrule
             }
-            \textbf{Gesamt}                       & \textbf{\getPointsTotal{}}                           & \textbf{}                   \\
+            \textbf{Gesamt}                                                                               & \textbf{\getPointsTotal{}}                           & \IfSolutionT{\fatsf{\getPointsTotal{}}}                                    \\
             \bottomrule
         \end{tabularx}
         \caption*{Punktetabelle, Design 3}
