@@ -241,8 +241,41 @@
 }
 
 \IfTudaciVersionAtLeastTF{3.13}{
+  \tl_gclear_new:N \g__ptxcd_task_properties_collector_tl
+  \tl_gclear_new:N \g__ptxcd_task_properties_loaded_tl
   \prop_gclear_new:N \g__ptxcd_subpoints_collector_prop
   \prop_gclear_new:N \g__ptxcd_loaded_subpoints_prop
+
+  \RenewDocumentEnvironment{task}{om}{
+    \IfNoValueF{#1}{\keys_set:nn {ptxcd/task}{#1}}
+    \@task{#2}
+    \bool_if:NF \l__ptxcd_points_auto_bool {
+      \cs_if_exist_use:NF \prop_gput:Nxx
+      {\exp_args:NNx \prop_gput:Nnx}
+      \g__ptxcd_points_collector_prop
+      {\thetask} {\fp_to_decimal:N \l_ptxcd_ex_task_points_fp}
+    }
+  }{
+    % Store Task Properties
+    \tl_clear_new:N \l__ptxcd_task_properties_collector_tl
+    \tl_set_eq:NN \l__ptxcd_task_properties_collector_tl \g__ptxcd_task_properties_collector_tl
+    \rubos_prop_nested_set:Nxx \l__ptxcd_task_properties_collector_tl {\the\value{task}, title} {\tl_to_str:n {#2}}
+    \rubos_prop_nested_set:Nxx \l__ptxcd_task_properties_collector_tl {\the\value{task}, credit} {\tl_to_str:N \l_ptxcd_ex_task_credit_tl}
+    \rubos_prop_nested_set:Nxx \l__ptxcd_task_properties_collector_tl {\the\value{task}, pointsauto} {\bool_if:NTF \l__ptxcd_points_auto_bool {true} {false}}
+    \rubos_prop_nested_set:Nxx \l__ptxcd_task_properties_collector_tl {\the\value{task}, points} {\bool_if:NTF \l__ptxcd_points_auto_bool {\fp_use:N \g__ptxcd_ex_collected_points_fp} {\fp_use:N \l_ptxcd_ex_task_points_fp}}
+    \rubos_prop_nested_set:Nxx \l__ptxcd_task_properties_collector_tl {\the\value{task}, solution} {\bool_if:NTF \l_ptxcd_ex_solution_bool {true}{false}}
+    \tl_gset_eq:NN \g__ptxcd_task_properties_collector_tl \l__ptxcd_task_properties_collector_tl
+
+    % a
+    \bool_if:NT \l__ptxcd_points_auto_bool {
+      \cs_if_exist_use:NF \prop_gput:Nxx
+      {\exp_args:NNx \prop_gput:Nnx}
+      \g__ptxcd_points_collector_prop
+      {\thetask} {\fp_to_decimal:N \g__ptxcd_ex_collected_points_fp}
+      \fp_gzero:N \g__ptxcd_ex_collected_points_fp
+    }
+  }
+
   \RenewDocumentEnvironment{subtask}{o}{
     \tl_if_in:nnT {#1} {=} {
       \keys_set:nn {ptxcd/subtask} {#1}
@@ -252,6 +285,17 @@
     }{
       \@subtask{\l_ptxcd_ex_title_tl}
     }
+
+    \tl_clear_new:N \l__ptxcd_task_properties_collector_tl
+    \tl_set_eq:NN \l__ptxcd_task_properties_collector_tl \g__ptxcd_task_properties_collector_tl
+    \rubos_prop_nested_set:Nxx \l__ptxcd_task_properties_collector_tl {\the\value{task}, subtasks, \the\value{subtask}} {
+      title={\tl_to_str:N \l_ptxcd_ex_title_tl},
+      credit={\tl_to_str:N \l_ptxcd_ex_subtask_credit_tl},
+      points={\fp_use:N \l_ptxcd_ex_subtask_points_fp},
+      thesubtask=\thesubtask,
+      subtaskformat=\subtaskformat,
+    }
+    \tl_gset_eq:NN \g__ptxcd_task_properties_collector_tl \l__ptxcd_task_properties_collector_tl
 
     % % Get task subpoints prop
     \exp_args:NNe \prop_get:NnNTF \g__ptxcd_subpoints_collector_prop {\thetask} \l_temp_task_points_tl
@@ -280,6 +324,22 @@
       #1
     }
   }
+  \newcommand*{\ptxcd@LoadTaskProperties}[1]{
+    % \prop_clear_new:N \l_tmpa_prop
+    % \prop_gset_from_keyval:Nn \g_ibimseinsarschprop {
+    %   #1
+    % }
+    % \tl_gclear:N \g__ptxcd_task_properties_loaded_tl
+    % % \tl_gput_right:Nn \g__ptxcd_task_properties_loaded_tl {3={1=2},}
+    % \prop_map_inline:Nn \g_ibimseinsarschprop {
+    %   \tl_gput_right:Nn \g__ptxcd_task_properties_loaded_tl {##1={##2}},}
+    % }
+    % \tl_gset_rescan:Nno \g__ptxcd_task_properties_loaded_tl {} {#1}
+    \tl_gset:Nn \g__ptxcd_task_properties_loaded_tl {#1}
+  % \exp_args:NNe \tl_gset:Nn \g__ptxcd_task_properties_loaded_tl {
+    %   #1
+    % }
+  }
 
   \bool_if:NT \g__ptxcd_points_bool {
     \BeforeClosingMainAux{
@@ -290,21 +350,43 @@
       \iow_now:Nx \@auxout{
         \exp_not:N \ptxcd@LoadSubPoints{\l_tmpc_tl}
       }
+      %----%
+      \iow_now:Nx \@auxout{
+        \exp_not:N \ptxcd@LoadTaskProperties{\g__ptxcd_task_properties_collector_tl}
+      }
+
     }
   }
 
   \def\getSubPoints#1#2{
-    \exp_args:NNx \prop_get:NnNTF \g__ptxcd_loaded_subpoints_prop {#1} \l_temp_task_points_tl
+    % \exp_args:NNx \prop_get:NnNTF \g__ptxcd_loaded_subpoints_prop {#1} \l_temp_task_points_tl
+    \exp_args:Nnx \__rubos_nested_contains:nnTF {\g__ptxcd_task_properties_loaded_tl} {#1,subtasks,#2,points}
     {
-      \prop_clear_new:N \l_temp_task_points_prop
-      \exp_args:NNe \prop_set_from_keyval:Nn \l_temp_task_points_prop {
-        \l_temp_task_points_tl
-      }
+      \exp_args:NNx \rubos_prop_nested_get:nn {\g__ptxcd_task_properties_loaded_tl} {#1,subtasks,#2,points}
+      % \prop_clear_new:N \l_temp_task_points_prop
+      % \exp_args:NNe \prop_set_from_keyval:Nn \l_temp_task_points_prop {
+      %   \l_temp_task_points_tl
+      % }
 
-      \exp_args:NNx \prop_get:NnNTF \l_temp_task_points_prop {#2} \l_temp_subtask_points_tl {
-        \l_temp_subtask_points_tl
-      }
-      {\nfss@text{\reset@font\bfseries???}}
+      % \exp_args:NNx \prop_get:NnNTF \l_temp_task_points_prop {#2} \l_temp_subtask_points_tl {
+      %   \l_temp_subtask_points_tl
+      % }
+      % {\nfss@text{\reset@font\bfseries???}}
+    }
+    {\nfss@text{\reset@font\bfseries??}}
+  }
+
+  \def\getTaskTitle#1{
+    \exp_args:Nnx \__rubos_nested_contains:nnTF {\g__ptxcd_task_properties_loaded_tl} {#1,title}
+    {
+      \exp_args:NNx \rubos_prop_nested_get:nn {\g__ptxcd_task_properties_loaded_tl} {#1,title}
+    }
+    {\nfss@text{\reset@font\bfseries??}}
+  }
+  \def\getSubTaskTitle#1#2{
+    \exp_args:Nnx \__rubos_nested_contains:nnTF {\g__ptxcd_task_properties_loaded_tl} {#1,subtasks,#2,title}
+    {
+      \exp_args:NNx \rubos_prop_nested_get:nn {\g__ptxcd_task_properties_loaded_tl} {#1,subtasks,#2,title}
     }
     {\nfss@text{\reset@font\bfseries??}}
   }
@@ -377,21 +459,21 @@
 % #2: Comma List (List of the keys to get the desired value)
 % returns: Tokenlist
 \cs_new:Npn \rubos_prop_nested_get:nn #1#2 {
-  \tl_gclear_new:N \g_rubos_nestedcurr_tl
-  \tl_set:Nn \g_rubos_nestedcurr_tl {#1}
+  \tl_clear_new:N \l_rubos_nestedcurr_tl
+  \tl_set:Nn \l_rubos_nestedcurr_tl {#1}
   \prop_clear_new:N \l_rubos_nestedcurr_prop
   \clist_map_inline:nn {#2}{
     % Check if Current Tokenlist is a Property List
-    \__rubos_is_prop_list:nTF {\tl_use:N \g_rubos_nestedcurr_tl} {
+    \__rubos_is_prop_list:nTF {\tl_use:N \l_rubos_nestedcurr_tl} {
       % Current List is a Property List
       % Parse Property List
-      \exp_args:NNe \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
-        \g_rubos_nestedcurr_tl
+      \exp_args:NNf \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
+        \l_rubos_nestedcurr_tl
       }
       % Make sure key is present
       \prop_if_in:NnTF \l_rubos_nestedcurr_prop {##1} {
         % Key is present
-        \prop_get:NnN \l_rubos_nestedcurr_prop {##1} \g_rubos_nestedcurr_tl
+        \prop_get:NnN \l_rubos_nestedcurr_prop {##1} \l_rubos_nestedcurr_tl
       } {
         % Key is not present
         \ClassError{rubos_tuda_template}{Subproperty~##1~does~not~exist~the~nested~property~list!}{Subproperty~##1~does~not~exist~the~nested~property~list!}
@@ -402,7 +484,7 @@
     }
   }
   % Put result in Output stream
-  \tl_use:N \g_rubos_nestedcurr_tl
+  \tl_use:N \l_rubos_nestedcurr_tl
 }
 
 \cs_set_eq:NN\nestedget \rubos_prop_nested_get:nn
@@ -453,6 +535,7 @@
   % Create nested Property List to insert based on insertion point
   \tl_clear_new:N \l_rubos_new_nestedprop_tl
   \tl_set:Nn \l_rubos_new_nestedprop_tl {#3}
+  \clist_reverse:N \l_rubos_nestedkeys_remaining_clist
   \clist_map_inline:Nn \l_rubos_nestedkeys_remaining_clist {
     \prop_clear:N \l_rubos_nestedcurr_prop
     \prop_put:Nxx \l_rubos_nestedcurr_prop {##1} {\l_rubos_new_nestedprop_tl}
@@ -483,13 +566,15 @@
   \tl_set_eq:NN #1 \l_rubos_new_nestedprop_tl
 }
 
+\cs_generate_variant:Nn \rubos_prop_nested_set:Nnn { Nxx }
+
 \cs_set_eq:NN\nestedset \rubos_prop_nested_set:nn
 
 \prg_new_conditional:Npnn \__rubos_is_prop_list:n #1 { p, T, F, TF } {
 
   \bool_if:nT {\tl_if_empty_p:n {#1} || \tl_if_blank_p:n {#1}} {\prg_return_true:}
   \bool_set_true:N \l_rubos_is_prop_bool
-  \exp_args:Ne \clist_map_inline:nn {#1} {
+  \exp_args:Nf \clist_map_inline:nn {#1} {
     \bool_if:NT \l_rubos_is_prop_bool {
       % ##1
       \bool_if:nF {\tl_if_empty_p:n {#1} || \tl_if_blank_p:n {#1}} {
@@ -515,24 +600,24 @@
 % #1: Token List which is a nested Property List (like: {3={a)=3,b)=2,},4={a)=5,b)=3,c)=8}})
 % #2: Comma List (List of the keys to get the desired value)
 \prg_new_conditional:Npnn \__rubos_nested_contains:nn #1#2 { p, T, F, TF } {
-  \tl_gclear_new:N \g_rubos_nestedcurr_tl
-  \tl_set:Nn \g_rubos_nestedcurr_tl {#1}
+  \tl_clear_new:N \l_rubos_nestedcurr_tl
+  \tl_set:Nf \l_rubos_nestedcurr_tl {#1}
   \prop_clear_new:N \l_rubos_nestedcurr_prop
   % Since you can't use the return statement inside a map function...
   \bool_set_true:N \l_rubos_nestedcontains_bool
   \clist_map_inline:nn {#2}{
     \bool_if:NT \l_rubos_nestedcontains_bool {
       % Check if Current Tokenlist is a Property List
-      \tl_if_in:NnTF \g_rubos_nestedcurr_tl {=} {
+      \tl_if_in:NnTF \l_rubos_nestedcurr_tl {=} {
         % Current List is a Property List
         % Parse Property List
-        \exp_args:NNe \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
-          \g_rubos_nestedcurr_tl
+        \exp_args:NNf \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
+          \l_rubos_nestedcurr_tl
         }
         % Make sure key is present
         \prop_if_in:NnTF \l_rubos_nestedcurr_prop {##1} {
           % Key is present
-          \prop_get:NnN \l_rubos_nestedcurr_prop {##1} \g_rubos_nestedcurr_tl
+          \prop_get:NnN \l_rubos_nestedcurr_prop {##1} \l_rubos_nestedcurr_tl
         } {
           % Key is not present
           \bool_set_false:N \l_rubos_nestedcontains_bool

@@ -3,7 +3,7 @@
     color=1b,
     load_common,
     submission,
-    % dark_mode,
+    dark_mode,
     boxarc,
     % manual_term, % Restore original Functionality to term
     % shell_escape = false, % Kompatibilität mit sharelatex
@@ -89,7 +89,7 @@
             % Fib: \rubosfib{20}
 
             % Check: \IfNestedContainsTF{3={a)=3,b)=2,},4=2}{3,c)}{true}{false}
-            
+
             % asd: \nestedget{3={a)=3,b)=2,},4=2}{3,b)}
 
             --Testcode--\par
@@ -103,6 +103,23 @@
             % \tl_use:N \l_lel_tl\par
             tl: \rubos_print_nested_tl:n {\l_lel_tl}
             % \par get: \nestedget{\l_lel_tl}{3,c),2}\par
+            \clearpage
+            % a:
+            % \prop_clear_new:N \l_tmpa_subtask_prop
+            % \prop_set_from_keyval:Nn \l_tmpa_subtask_prop {
+            %     title={\l_ptxcd_ex_title_tl},
+            %     credit={\l_ptxcd_ex_subtask_credit_tl},
+            %     points={\fp_use:N \l_ptxcd_ex_subtask_points_fp},
+            %     thesubtask=\thesubtask,
+            %     subtaskformat=\subtaskformat,
+            % }
+            % \tl_clear_new:N \l_tmpa_subtask_prop_tl
+            % \prop_map_inline:Nn \l_tmpa_subtask_prop {
+            %     \tl_put_right:Nn \l_tmpa_subtask_prop_tl {#1={#2},}
+            % }
+            % \l_tmpa_subtask_prop_tl
+            % \exp_args:Nx \rubos_print_nested_tl:n {\l_tmpa_subtask_prop_tl}
+            % \exp_args:Nx \rubos_print_nested_tl:n {\l_tmpa_subtask_prop_tl}
             \ExplSyntaxOff
         \end{solution}
     \end{subtask}
@@ -158,7 +175,7 @@
                   Gesamt \getPoints{\thetask} Punkte
                   \begin{itemize}
                       \mapSubtasks{\item \subtaskformat{}
-                            = \getSubPoints{\thetask}{\thesubtask}}
+                            = \getSubPoints{\the\value{task}}{\the\value{subtask}}}
                   \end{itemize}
               }{%
                   \getPoints{\thetask} Punkte
@@ -200,20 +217,32 @@
         \rowcolors{2}{fgcolor!10!\thepagecolor}{fgcolor!10!\thepagecolor}
         \begin{tabularx}{\textwidth}{|X|c|c|}
             \toprule
-            \fatsf{Aufgabe}                       & \fatsf{möglich}                      & \fatsf{erreicht}            \\
+            \fatsf{Aufgabe}                       & \fatsf{möglich}                                      & \fatsf{erreicht}            \\
             \midrule\midrule
-            \mapTasks{%
-            \textbf{\taskformat{}}                & \getPoints{\thetask}                 & \IfSubtasksTF{\mapSubtasks{ \\%
-            \rowcolor{\thepagecolor}\thesubtask{} & \getSubPoints{\thetask}{\thesubtask} &
+            \mapTasks*{%
+            \textbf{\taskformat{}:~\getTaskTitle{\the\value{task}}}                & \getPoints{\thetask}                                 & \IfSubtasksTF{\mapSubtasks{ \\%
+            \rowcolor{\thepagecolor}\thesubtask{}~\getSubTaskTitle{\the\value{task}}{\the\value{subtask}} & \getSubPoints{\the\value{task}}{\the\value{subtask}} &
                     }
-            }{}                                                                                                        \\
+            }{}                                                                                                                        \\
                 \midrule\midrule
             }
-            \textbf{Gesamt}                       & \textbf{\getPointsTotal{}}           & \textbf{}                   \\
+            \textbf{Gesamt}                       & \textbf{\getPointsTotal{}}                           & \textbf{}                   \\
             \bottomrule
         \end{tabularx}
         \caption*{Punktetabelle, Design 3}
         \label{tab:newtab}
     \end{table}
 \end{task}
+% \clearpage
+% \ExplSyntaxOn
+% \tl_if_empty:NTF \g__ptxcd_task_properties_loaded_tl {??} {
+%     ???
+
+%     % \tl_clear_new:N \l__ptxcd_task_properties_loaded_tl
+%     % \tl_set_eq:NN \l__ptxcd_task_properties_loaded_tl \g__ptxcd_task_properties_loaded_tl
+%     % \rubos_prop_nested_set:Nnn \g__ptxcd_task_properties_loaded_tl {3,points} {9}
+%     % \tl_gset_eq:NN \g__ptxcd_task_properties_loaded_tl \l__ptxcd_task_properties_loaded_tl
+%     }\par
+
+% \ExplSyntaxOff
 \end{document}
