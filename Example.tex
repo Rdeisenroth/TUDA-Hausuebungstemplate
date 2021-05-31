@@ -96,38 +96,21 @@
             --Testcode--\par
             \ExplSyntaxOn
             %
-            \tl_new:N \l_lel_tl
-            % \tl_set:Nn \l_lel_tl {3={a)=3,b)=2,c)={1=2,2=3}},4={a)=3}}
-            \tl_set:Nn \l_lel_tl {3={a)=3,b)=2,c)={1=2,2=3}},4={a)=3},a=3}
-            \rubos_prop_nested_set:Nnn \l_lel_tl {5,c),2} {9}
-            \rubos_prop_nested_set:Nnn \l_lel_tl {5,d),5} {8}
+            \tl_set_eq:NN \l_lel_tl \g__ptxcd_task_properties_loaded_tl
+            % tl: \rubos_print_nested_tl:n {\l_lel_tl}
+            % \rubos_prop_nested_get:nn {\l_lel_tl} {1,title}\par
+            % \rubos_prop_nested_set:Nnn \l_lel_tl {1,title} {9}
+            % \rubos_prop_nested_get:nn {\l_lel_tl} {1,title}\par
+            % \rubos_prop_nested_set:Nnn \l_lel_tl {6} {3}
             % \tl_use:N \l_lel_tl\par
-            tl: \rubos_print_nested_tl:n {\l_lel_tl}
-            % \par get: \nestedget{\l_lel_tl}{3,c),2}\par
+
             \clearpage
-            % a:
-            % \prop_clear_new:N \l_tmpa_subtask_prop
-            % \prop_set_from_keyval:Nn \l_tmpa_subtask_prop {
-            %     title={\l_ptxcd_ex_title_tl},
-            %     credit={\l_ptxcd_ex_subtask_credit_tl},
-            %     points={\fp_use:N \l_ptxcd_ex_subtask_points_fp},
-            %     thesubtask=\thesubtask,
-            %     subtaskformat=\subtaskformat,
-            % }
-            % \tl_clear_new:N \l_tmpa_subtask_prop_tl
-            % \prop_map_inline:Nn \l_tmpa_subtask_prop {
-            %     \tl_put_right:Nn \l_tmpa_subtask_prop_tl {#1={#2},}
-            % }
-            % \l_tmpa_subtask_prop_tl
-            % \exp_args:Nx \rubos_print_nested_tl:n {\l_tmpa_subtask_prop_tl}
-            % \exp_args:Nx \rubos_print_nested_tl:n {\l_tmpa_subtask_prop_tl}
             \ExplSyntaxOff
         \end{solution}
     \end{subtask}
 \end{task}
 \clearpage
 \begin{task}[points=2,solution=true]{Weitere Macros}
-    asdfgg
     Boxed/framed environments
     \newtheoremstyle{ocrenumbox}% Theorem style name
     {0pt}% Space above

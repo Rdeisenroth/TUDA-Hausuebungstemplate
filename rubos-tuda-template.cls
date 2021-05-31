@@ -1,5 +1,5 @@
 \def\fileversion{1.3.0}
-\def\filedate{2021/05/30}
+\def\filedate{2021/05/31}
 
 % Sets the LaTeX version for the package to work.
 \NeedsTeXFormat{LaTeX2e}
@@ -641,12 +641,13 @@
 \cs_set_eq:NN\IfNestedContainsTF \__rubos_nested_contains:nnTF
 
 \cs_new:Npn \rubos_print_nested_tl:n #1 {
+  % \tl_set:Nf \l_tmpa_tl {#1}
   \{
-  \exp_args:No \tl_map_inline:nn {#1} {
-    \int_compare:nTF {\tl_count:n{##1}=1} {##1}{\rubos_print_nested_tl:n {##1}}
-  }
+    \exp_args:Nf \tl_to_str:n {#1}
   \}
 }
+
+\cs_set_eq:NN \printNested \rubos_print_nested_tl:n
 
 \ExplSyntaxOff
 
