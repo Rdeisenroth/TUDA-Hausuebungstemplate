@@ -260,6 +260,8 @@
     \tl_clear_new:N \l__ptxcd_task_properties_collector_tl
     \tl_set_eq:NN \l__ptxcd_task_properties_collector_tl \g__ptxcd_task_properties_collector_tl
     \rubos_prop_nested_set:Nxx \l__ptxcd_task_properties_collector_tl {\the\value{task}, title} {\tl_to_str:n {#2}}
+    \rubos_prop_nested_set:Nxx \l__ptxcd_task_properties_collector_tl {\the\value{task}, thetask} {\exp_args:No\tl_to_str:n{\thetask}}
+    \rubos_prop_nested_set:Nxx \l__ptxcd_task_properties_collector_tl {\the\value{task}, taskformat} {\exp_args:No\tl_to_str:n{\taskformat}}
     \rubos_prop_nested_set:Nxx \l__ptxcd_task_properties_collector_tl {\the\value{task}, credit} {\tl_to_str:N \l_ptxcd_ex_task_credit_tl}
     \rubos_prop_nested_set:Nxx \l__ptxcd_task_properties_collector_tl {\the\value{task}, pointsauto} {\bool_if:NTF \l__ptxcd_points_auto_bool {true} {false}}
     \rubos_prop_nested_set:Nxx \l__ptxcd_task_properties_collector_tl {\the\value{task}, points} {\bool_if:NTF \l__ptxcd_points_auto_bool {\fp_use:N \g__ptxcd_ex_collected_points_fp} {\fp_use:N \l_ptxcd_ex_task_points_fp}}
@@ -292,8 +294,8 @@
       title={\tl_to_str:N \l_ptxcd_ex_title_tl},
       credit={\tl_to_str:N \l_ptxcd_ex_subtask_credit_tl},
       points={\fp_use:N \l_ptxcd_ex_subtask_points_fp},
-      thesubtask=\thesubtask,
-      subtaskformat=\subtaskformat,
+      thesubtask={\exp_args:No\tl_to_str:n{\thesubtask}},
+      subtaskformat={\exp_args:No\tl_to_str:n{\subtaskformat}},
     }
     \tl_gset_eq:NN \g__ptxcd_task_properties_collector_tl \l__ptxcd_task_properties_collector_tl
 
@@ -500,7 +502,7 @@
   \clist_set:Nn \l_rubos_nestedkeys_remaining_clist {#2}
   \clist_clear_new:N \l_rubos_nestedkeys_done_clist
   \str_clear_new:N \l_rubos_nestedkeys_current_key_tl
-  \tl_clear_new:N \l_rubos_nestedstack_tl
+  \seq_clear_new:N \l_rubos_nestedstack_seq
   \prop_clear_new:N \l_rubos_nestedcurr_prop
   \bool_set_true:N \l_rubos_nestediterate_bool
   % Fill Stack and find out insertion point
@@ -512,12 +514,12 @@
       \__rubos_is_prop_list:nTF {\l_rubos_nestedcurr_tl} {
         % Current List is a Property List
         % Parse Property List
-        \exp_args:NNe \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
+        \exp_args:NNf \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
           \l_rubos_nestedcurr_tl
         }
-        \exp_args:NNe \tl_put_left:Nn \l_rubos_nestedstack_tl {{\l_rubos_nestedcurr_tl}}
+        \exp_args:NNf \seq_put_left:Nn \l_rubos_nestedstack_seq {\l_rubos_nestedcurr_tl}
         % Test if key is present
-        \exp_args:NNo \prop_get:NnNF \l_rubos_nestedcurr_prop {\l_rubos_nestedkeys_current_key_tl} \l_rubos_nestedcurr_tl {
+        \exp_args:NNf \prop_get:NnNF \l_rubos_nestedcurr_prop {\l_rubos_nestedkeys_current_key_tl} \l_rubos_nestedcurr_tl {
           % Key is not Present
           \bool_set_false:N \l_rubos_nestediterate_bool
         }
@@ -538,7 +540,7 @@
   \clist_reverse:N \l_rubos_nestedkeys_remaining_clist
   \clist_map_inline:Nn \l_rubos_nestedkeys_remaining_clist {
     \prop_clear:N \l_rubos_nestedcurr_prop
-    \prop_put:Nxx \l_rubos_nestedcurr_prop {##1} {\l_rubos_new_nestedprop_tl}
+    \prop_put:Noo \l_rubos_nestedcurr_prop {##1} {\l_rubos_new_nestedprop_tl}
     \tl_clear:N \l_rubos_new_nestedprop_tl
     \prop_map_inline:Nn \l_rubos_nestedcurr_prop {
       \tl_put_right:Nn \l_rubos_new_nestedprop_tl {####1={####2},}
@@ -550,11 +552,12 @@
     % ##1,
     % Parse Next Prop List from Stack
     \prop_clear:N \l_rubos_nestedcurr_prop
-    \exp_args:NNe \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
-      \tl_head:N \l_rubos_nestedstack_tl
+    \seq_pop_left:NN \l_rubos_nestedstack_seq \l_rubos_nestedcurr_tl
+    \exp_args:NNo \prop_set_from_keyval:Nn \l_rubos_nestedcurr_prop {
+      \l_rubos_nestedcurr_tl
     }
-    \tl_set:Nx \l_rubos_nestedstack_tl {\tl_tail:N \l_rubos_nestedstack_tl}
-    \prop_put:Nxx \l_rubos_nestedcurr_prop {##1} {\l_rubos_new_nestedprop_tl}
+    % \tl_set:Nx \l_rubos_nestedstack_tl {\tl_tail:N \l_rubos_nestedstack_tl}
+    \prop_put:Noo \l_rubos_nestedcurr_prop {##1} {\l_rubos_new_nestedprop_tl}
 
     \tl_clear:N \l_rubos_new_nestedprop_tl
     \prop_map_inline:Nn \l_rubos_nestedcurr_prop {
@@ -562,11 +565,11 @@
     }
   }
 
-  % Copy result to Output List
+  % % Copy result to Output List
   \tl_set_eq:NN #1 \l_rubos_new_nestedprop_tl
 }
 
-\cs_generate_variant:Nn \rubos_prop_nested_set:Nnn { Nxx }
+\cs_generate_variant:Nn \rubos_prop_nested_set:Nnn { Nxx,Nxn,Noo,Nxo }
 
 \cs_set_eq:NN\nestedset \rubos_prop_nested_set:nn
 

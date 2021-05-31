@@ -97,9 +97,10 @@
             \ExplSyntaxOn
             %
             \tl_set_eq:NN \l_lel_tl \g__ptxcd_task_properties_loaded_tl
-            % tl: \rubos_print_nested_tl:n {\l_lel_tl}
             % \rubos_prop_nested_get:nn {\l_lel_tl} {1,title}\par
-            % \rubos_prop_nested_set:Nnn \l_lel_tl {1,title} {9}
+            tl: \rubos_print_nested_tl:n {\l_lel_tl}\par
+            \rubos_prop_nested_set:Nnn \l_lel_tl {4,credits,h,d,f} {9}
+            tl: \rubos_print_nested_tl:n {\l_lel_tl}\par
             % \rubos_prop_nested_get:nn {\l_lel_tl} {1,title}\par
             % \rubos_prop_nested_set:Nnn \l_lel_tl {6} {3}
             % \tl_use:N \l_lel_tl\par
